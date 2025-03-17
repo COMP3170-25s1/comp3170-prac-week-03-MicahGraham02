@@ -1,5 +1,7 @@
 package comp3170.week3;
 
+import static comp3170.Math.TAU;
+
 import static org.lwjgl.opengl.GL11.GL_FILL;
 import static org.lwjgl.opengl.GL11.GL_FRONT_AND_BACK;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
@@ -31,10 +33,15 @@ public class Scene {
 
 	private Shader shader;
 	
-	private Matrix4f model = new Matrix4f( 1.0f, 0.0f, 0.0f, 0.0f,
-										   0.0f, 1.0f, 0.0f, 0.0f,
-										   0.0f, 0.0f, 0.0f, 0.0f, 
-										   0.0f, 0.0f, 0.0f, 1.0f);
+	private Matrix4f transMatrix = new Matrix4f();
+	private Matrix4f scalMatrix = new Matrix4f();
+	private Matrix4f rotMatrix = new Matrix4f();
+	private Matrix4f modelMatrix = new Matrix4f();
+	
+	final private float ROTATION_RATE = TAU/6;
+	final private float SCALE = 0.1f;
+	final private Vector3f OFFSET = new Vector3f(0.5f, 0.0f, 0.0f);		
+	final private float MOVE_RATE = 5f;
 
 	public Scene() {
 
@@ -82,6 +89,13 @@ public class Scene {
 			// @formatter:on
 
 		indexBuffer = GLBuffers.createIndexBuffer(indices);
+		
+		//float rot = TAU/3;
+		//translationMatrix(0.2f, 0.0f, transMatrix);
+		//scaleMatrix(0.1f, 0.1f, scalMatrix);
+		//rotationMatrix(rot, rotMatrix);
+		//modelMatrix.mul(transMatrix).mul(rotMatrix).mul(scalMatrix);
+		modelMatrix.translate(OFFSET).scale(SCALE);
 
 	}
 
@@ -90,15 +104,21 @@ public class Scene {
 		shader.enable();
 		// set the attributes
 		shader.setAttribute("a_position", vertexBuffer);
+		shader.setUniform("u_model", modelMatrix);
 		shader.setAttribute("a_colour", colourBuffer);
-		shader.setUniform("u_model", model);
 
 		// draw using index buffer
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
 		
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawElements(GL_TRIANGLES, indices.length, GL_UNSIGNED_INT, 0);
-
+	}
+	
+	public void update(float deltaTime) {
+		float move = MOVE_RATE * deltaTime;
+		float rotation = ROTATION_RATE * deltaTime;
+		modelMatrix.translate(0.0f, move, 0.0f).rotateZ(rotation);
+		System.out.println("update");
 	}
 
 	/**
@@ -142,8 +162,10 @@ public class Scene {
 		
 		dest.identity();
 		
-		dest.m10(angle);
-		dest.m01(angle);		
+		dest.m00((float) Math.cos(angle));
+		dest.m01((float) Math.sin(angle));
+		dest.m10((float) Math.sin(-angle));
+		dest.m11((float) Math.cos(angle));
 		
 		return dest;
 	}
